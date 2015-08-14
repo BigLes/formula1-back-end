@@ -1,0 +1,8 @@
+{
+  "name": "formula",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "websocket": "^1.0.19"
+  }
+}
