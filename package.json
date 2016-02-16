@@ -3,6 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "websocket": "^1.0.19"
+    "websocket": "^1.0.22"
   }
 }
