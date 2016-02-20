@@ -31,7 +31,6 @@ function originIsAllowed(origin) {
 
 wsServer.on('request', function(request) {
     let roomId = request.resourceURL.query.roomId;
-    let track = request.resourceURL.query.track;
     let room;
 
     if (!originIsAllowed(request.origin)) {
@@ -40,7 +39,8 @@ wsServer.on('request', function(request) {
     }
 
     if (!roomId) {
-        room = new Room(roomId, track);
+        roomId = (new Date()).getTime();
+        room = new Room(roomId);
         rooms[roomId] = room;
     } else {
         room = rooms[roomId];
