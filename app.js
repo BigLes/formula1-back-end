@@ -5,6 +5,7 @@ const http = require('http');
 let settings;
 
 let Room = require('./models/room');
+let rooms = {};
 
 const server = http.createServer(function(request, response) {});
 if (process.env.DEVELOP) {
@@ -29,14 +30,24 @@ function originIsAllowed(origin) {
 }
 
 wsServer.on('request', function(request) {
+    let roomId = request.resourceURL.query.roomId;
+    let track = request.resourceURL.query.track;
+    let room;
+
     if (!originIsAllowed(request.origin)) {
         // Make sure we only accept requests from an allowed origin
         return request.reject();
     }
+
+    if (!roomId) {
+        room = new Room(roomId, track);
+        rooms[roomId] = room;
+    } else {
+        room = rooms[roomId];
+    }
+
+    wsServer.on('connect', room.onConnect.bind(room));
+    wsServer.on('close', room.onClose.bind(room));
+
     request.accept('echo-protocol', request.origin);
 });
-
-let room1 = new Room();
-
-wsServer.on('connect', room1.onConnect.bind(room1));
-wsServer.on('close', room1.onClose.bind(room1));
