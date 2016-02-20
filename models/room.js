@@ -1,6 +1,7 @@
 'use strict';
 
 const ids = require('../common/ids');
+const WebSocket = require('ws');
 
 class Room {
     constructor (roomId) {
@@ -19,13 +20,13 @@ class Room {
             connection.player = {id: this.connections.length};
             this.connections.push(connection);
 
-            if ((this.connections.filter((connection) => connection.connected).length >= 2) && this.notStarted) {
+            if ((this.connections.filter((connection) => !(connection.readyState === WebSocket.CLOSED)).length >= 2) && this.notStarted) {
                 this._countDown();
                 this.notStarted = false;
             }
 
             if (this.track) {
-                this._sendToOne(["ChooseTrack", this.track], connection);
+                this._sendToOne(["ChooseTrack", this.track, this.roomId], connection);
             }
 
             this._addEvent(connection);
@@ -34,7 +35,7 @@ class Room {
 
     onClose (connection) {
         connection.player.teamChoosed = false;
-        if (this.connections.filter((connection) => connection.connected).length === 0) {
+        if (this.connections.filter((connection) => !(connection.readyState === WebSocket.CLOSED)).length === 0) {
             this.connections = [];
             this.notStarted = true;
             this.roomOpen = true;
@@ -43,11 +44,11 @@ class Room {
 
     _addEvent (connection) {
         connection.on('message', (message) => {
-            let msg = JSON.parse(message.utf8Data);
+            let msg = JSON.parse(message);
 
             this.connections.forEach((tempConnection) => {
                 msg.data[9] = [[ids[connection.player.id][tempConnection.player.id]]];
-                if ((tempConnection !== connection) && (tempConnection.connected)) {
+                if ((tempConnection !== connection) && (!(tempConnection.readyState === WebSocket.CLOSED))) {
                     tempConnection.send(JSON.stringify(msg));
                 }
             });
@@ -56,8 +57,8 @@ class Room {
                 if (msg.data[0][0][0] === "ChangeTeam") {
                     connection.player.teamChoosed = true;
                     connection.player.name = msg.data[2][0][0];
-                    const connectedCount = this.connections.filter((connection) => connection.connected).length;
-                    const teamsCount = this.connections.filter((connection) => connection.connected && connection.player.teamChoosed).length;
+                    const connectedCount = this.connections.filter((connection) => !(connection.readyState === WebSocket.CLOSED)).length;
+                    const teamsCount = this.connections.filter((connection) => !(connection.readyState === WebSocket.CLOSED) && connection.player.teamChoosed).length;
                     this._sendToAll(["Loading", teamsCount]);
                     if (connectedCount === teamsCount) {
                         this._sendToAll(["TeamsSelected"]);
@@ -69,9 +70,13 @@ class Room {
                     connection.send(JSON.stringify(msg));
                 }
             } else {
+                this.track = msg.data[1][0][0];
                 msg.data[2][0][0] = this.roomId;
                 connection.send(JSON.stringify(msg));
             }
+        });
+        connection.on('close', () => {
+            this.onClose(connection);
         });
     }
 
@@ -85,9 +90,6 @@ class Room {
 
         while (i--) {
             msg.data[i][0][0] = message[i];
-        }
-        if (app.settings.console) {
-            console.log(JSON.stringify(msg));
         }
 
         this.connections.forEach((connection) => {
@@ -117,7 +119,7 @@ class Room {
             this._sendToAll(["Loading", i]);
             if (i++ >= this.timeToStart) {
                 clearInterval(int);
-                this._sendToAll(["ChooseTeams", this.connections.filter((connection) => connection.connected).length]);
+                this._sendToAll(["ChooseTeams", this.connections.filter((connection) => !(connection.readyState === WebSocket.CLOSED)).length]);
                 this.roomOpen = false;
             }
         }, 1000);

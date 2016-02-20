@@ -1,12 +1,8 @@
 'use strict';
 
 module.exports = {
-    develop: {
-        port: 8000,
-        console: true
-    },
-    production: {
-        port: 8000,
-        console: false
-    }
+    host: 'localhost',
+    port: 8000,
+    protocolVersion: 13,
+    console: false
 };

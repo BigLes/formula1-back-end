@@ -1,42 +1,20 @@
 'use strict';
 
-const WebSocketServer = require('websocket').server;
-const http = require('http');
-let settings;
+const WebSocketServer = require('ws').Server;
+const settings = require('./settings');
 
 let Room = require('./models/room');
 let rooms = {};
 
-const server = http.createServer(function(request, response) {});
-if (process.env.DEVELOP) {
-    settings = require('./settings').develop;
-} else {
-    settings = require('./settings').production;
-}
-
-GLOBAL.app = server.listen(settings.port, function() {
-    app.settings = settings;
-    console.log('Server started');
-});
-
 const wsServer = new WebSocketServer({
-    httpServer: server,
-    autoAcceptConnections: false
+    host: settings.host,
+    protocolVersion: settings.protocolVersion,
+    port: settings.port
 });
 
-function originIsAllowed(origin) {
-    // put logic here to detect whether the specified origin is allowed.
-    return true;
-}
-
-wsServer.on('request', function(request) {
-    let roomId = request.resourceURL.query.roomId;
+wsServer.on('connection', (connection) => {
+    let roomId = connection.upgradeReq.url.replace("/?roomId=", "");
     let room;
-
-    if (!originIsAllowed(request.origin)) {
-        // Make sure we only accept requests from an allowed origin
-        return request.reject();
-    }
 
     if (!roomId) {
         roomId = (new Date()).getTime();
@@ -46,8 +24,5 @@ wsServer.on('request', function(request) {
         room = rooms[roomId];
     }
 
-    wsServer.on('connect', room.onConnect.bind(room));
-    wsServer.on('close', room.onClose.bind(room));
-
-    request.accept('echo-protocol', request.origin);
+    room && room.onConnect(connection);
 });
