@@ -1,6 +1,5 @@
 'use strict';
 
-const ids = require('../common/ids');
 const WebSocket = require('ws');
 
 class Room {
@@ -8,10 +7,17 @@ class Room {
         this.connections = [];
         this.notStarted = true;
         this.roomOpen = true;
-        this.positions = require('../common/startPositions');
         this.timeToStart = 15;
         this.roomId = roomId;
         this.track = undefined;
+        this.positions = undefined;
+        this.ids = undefined;
+    }
+
+    setTrack (track) {
+        this.track = track;
+        this.positions = require('../common/' + track + '/startPositions');
+        this.ids = require('../common/' + track + '/ids');
     }
 
     onConnect (connection) {
@@ -47,9 +53,11 @@ class Room {
             let msg = JSON.parse(message);
 
             this.connections.forEach((tempConnection) => {
-                msg.data[9] = [[ids[connection.player.id][tempConnection.player.id]]];
-                if ((tempConnection !== connection) && (!(tempConnection.readyState === WebSocket.CLOSED))) {
-                    tempConnection.send(JSON.stringify(msg));
+                if (this.ids) {
+                    msg.data[9] = [[this.ids[connection.player.id][tempConnection.player.id]]];
+                    if ((tempConnection !== connection) && (!(tempConnection.readyState === WebSocket.CLOSED))) {
+                        tempConnection.send(JSON.stringify(msg));
+                    }
                 }
             });
 
@@ -70,7 +78,7 @@ class Room {
                     connection.send(JSON.stringify(msg));
                 }
             } else {
-                this.track = msg.data[1][0][0];
+                this.setTrack(msg.data[1][0][0]);
                 msg.data[2][0][0] = this.roomId;
                 connection.send(JSON.stringify(msg));
             }
