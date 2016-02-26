@@ -6,12 +6,12 @@ const settings = require('./settings');
 let Room = require('./models/room');
 
 class FormulaBackEnd {
-    constructor (server) {
+    constructor (host) {
         let rooms = {};
 
         const wsServer = new WebSocketServer({
-            host: server ? server.address().address : settings.host,
-            port: server ? server.address().port : settings.port,
+            host: host ? host : settings.host,
+            port: settings.port,
             protocolVersion: settings.protocolVersion
         });
 
