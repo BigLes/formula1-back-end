@@ -1,6 +1,10 @@
 'use strict';
 
 const WebSocket = require('ws');
+const TrackList = {
+    USA: true,
+    Monaco: true
+};
 
 class Room {
     constructor (roomId) {
@@ -78,9 +82,11 @@ class Room {
                     connection.send(JSON.stringify(msg));
                 }
             } else {
-                this.setTrack(msg.data[1][0][0]);
-                msg.data[2][0][0] = this.roomId;
-                connection.send(JSON.stringify(msg));
+                if (TrackList[msg.data[1][0][0]]) {
+                    this.setTrack(msg.data[1][0][0]);
+                    msg.data[2][0][0] = this.roomId;
+                    connection.send(JSON.stringify(msg));
+                }
             }
         });
         connection.on('close', () => {
