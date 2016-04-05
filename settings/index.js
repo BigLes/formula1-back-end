@@ -2,7 +2,7 @@
 
 module.exports = {
     host: 'localhost',
-    port: 8080,
+    port: 8000,
     protocolVersion: 13,
     console: false
 };
