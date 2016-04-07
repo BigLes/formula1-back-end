@@ -6,14 +6,19 @@ const settings = require('./settings');
 let Room = require('./models/room');
 
 class FormulaBackEnd {
-    constructor (host) {
+    constructor (host, port) {
         let rooms = {};
 
-        const wsServer = new WebSocketServer({
-            host: host ? host : settings.host,
-            port: settings.port,
+        let options = {
+            port: port ? port : settings.port,
             protocolVersion: settings.protocolVersion
-        });
+        };
+
+        if (host) {
+            options.host = host
+        }
+
+        const wsServer = new WebSocketServer(options);
 
         wsServer.on('connection', (connection) => {
             let roomId = connection.upgradeReq.url.replace("/?roomId=", "");
